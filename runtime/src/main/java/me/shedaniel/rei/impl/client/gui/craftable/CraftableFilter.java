@@ -32,10 +32,14 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 
 public class CraftableFilter {
     public static final CraftableFilter INSTANCE = new CraftableFilter();
+    private static final int CHECK_INTERVAL = 5;
     private boolean dirty = false;
     private Long2LongMap invStacks = new Long2LongOpenHashMap();
     private Long2LongMap containerStacks = new Long2LongOpenHashMap();
     private long menuId = -2;
+    private int tickCounter = 0;
+    private long lastInvHash = 0;
+    private long lastContainerHash = 0;
     
     public void markDirty() {
         dirty = true;
@@ -52,40 +56,60 @@ public class CraftableFilter {
     
     public void tick() {
         if (dirty) return;
+        
         AbstractContainerMenu menu = Minecraft.getInstance().player.containerMenu;
         long currentMenuId = menu == null ? -1 : menu.containerId;
         if (currentMenuId != menuId) {
             menuId = currentMenuId;
             markDirty();
+            return;
         }
-        if (dirty) return;
+        
+        tickCounter++;
+        if (tickCounter < CHECK_INTERVAL) return;
+        tickCounter = 0;
         
         Long2LongMap currentStacks;
         try {
             currentStacks = ClientHelperImpl.getInstance()._getInventoryItemsTypes();
         } catch (Throwable throwable) {
-            throwable.printStackTrace();
             currentStacks = Long2LongMaps.EMPTY_MAP;
         }
-        if (!currentStacks.equals(this.invStacks)) {
+        long invHash = computeHash(currentStacks);
+        if (invHash != lastInvHash) {
+            lastInvHash = invHash;
             invStacks = currentStacks;
             markDirty();
+            return;
         }
-        if (dirty) return;
     
         try {
             currentStacks = ClientHelperImpl.getInstance()._getContainerItemsTypes();
         } catch (Throwable throwable) {
-            throwable.printStackTrace();
             currentStacks = Long2LongMaps.EMPTY_MAP;
         }
-        if (!currentStacks.equals(this.containerStacks)) {
+        long containerHash = computeHash(currentStacks);
+        if (containerHash != lastContainerHash) {
+            lastContainerHash = containerHash;
             containerStacks = currentStacks;
             markDirty();
         }
     }
     
+    private static long computeHash(Long2LongMap map) {
+        long hash = map.size();
+        for (Long2LongMap.Entry entry : map.long2LongEntrySet()) {
+            hash = hash * 31 + entry.getLongKey();
+            hash = hash * 31 + entry.getLongValue();
+        }
+        return hash;
+    }
+    
     public Long2LongMap getInvStacks() {
-        return invStacks;
+        Long2LongOpenHashMap combined = new Long2LongOpenHashMap(invStacks);
+        for (Long2LongMap.Entry entry : containerStacks.long2LongEntrySet()) {
+            combined.mergeLong(entry.getLongKey(), entry.getLongValue(), Long::sum);
+        }
+        return combined;
     }
 }
