@@ -101,8 +101,7 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
     }
     
     private boolean checkCraftable(Display display) {
-        @Nullable Long2LongMap ingredients = chooseHandler(display);
-        if (ingredients == null) {
+        if (!ensureIngredientsCache(display)) {
             return false;
         }
         
@@ -111,6 +110,7 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
             return false;
         }
         
+        Long2LongMap tempUsed = new Long2LongOpenHashMap();
         int slotsCraftable = 0;
         boolean containsNonEmpty = false;
         
@@ -123,9 +123,11 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
                 if (slotPossible.getType() != VanillaEntryTypes.ITEM) continue;
                 ItemStack stack = slotPossible.castValue();
                 long hashFuzzy = EntryStacks.hashFuzzy(slotPossible);
-                long availableAmount = ingredients.get(hashFuzzy);
-                if (availableAmount >= stack.getCount()) {
-                    ingredients.put(hashFuzzy, availableAmount - stack.getCount());
+                long available = cachedIngredients.get(hashFuzzy);
+                long used = tempUsed.get(hashFuzzy);
+                long remaining = available - used;
+                if (remaining >= stack.getCount()) {
+                    tempUsed.put(hashFuzzy, used + stack.getCount());
                     containsNonEmpty = true;
                     slotsCraftable++;
                     break;
@@ -136,10 +138,9 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
         return slotsCraftable == requiredEntries.size() && containsNonEmpty;
     }
     
-    @Nullable
-    public Long2LongMap chooseHandler(Display display) {
+    private boolean ensureIngredientsCache(Display display) {
         if (ingredientsCacheValid && cachedIngredients != null) {
-            return new Long2LongOpenHashMap(cachedIngredients);
+            return true;
         }
         
         TransferHandler.Context transferContext = TransferHandler.Context.create(false, false, REIRuntime.getInstance().getPreviousContainerScreen(), display);
@@ -152,12 +153,20 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
                 } else {
                     ingredients = CraftableFilter.INSTANCE.getInvStacks();
                 }
-                cachedIngredients = new Long2LongOpenHashMap(ingredients);
+                cachedIngredients = ingredients;
                 ingredientsCacheValid = true;
-                return ingredients;
+                return true;
             }
         }
         
+        return false;
+    }
+    
+    @Nullable
+    public Long2LongMap chooseHandler(Display display) {
+        if (ensureIngredientsCache(display)) {
+            return new Long2LongOpenHashMap(cachedIngredients);
+        }
         return null;
     }
     

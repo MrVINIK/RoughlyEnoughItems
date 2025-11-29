@@ -138,7 +138,7 @@ public abstract class ClientsidedCookingDisplay extends BasicDisplay implements 
     }
     
     public static class Smoking extends ClientsidedCookingDisplay {
-        public static DisplaySerializer<Blasting> SERIALIZER = serializer(Blasting::new);
+        public static DisplaySerializer<Smoking> SERIALIZER = serializer(Smoking::new);
         
         public Smoking(FurnaceRecipeDisplay recipe, Optional<RecipeDisplayId> id) {
             super(recipe, id);
@@ -151,6 +151,28 @@ public abstract class ClientsidedCookingDisplay extends BasicDisplay implements 
         @Override
         public CategoryIdentifier<?> getCategoryIdentifier() {
             return BuiltinPlugin.SMOKING;
+        }
+        
+        @Override
+        public DisplaySerializer<? extends Display> getSerializer() {
+            return SERIALIZER;
+        }
+    }
+    
+    public static class Campfire extends ClientsidedCookingDisplay implements me.shedaniel.rei.plugin.common.displays.CampfireDisplay {
+        public static DisplaySerializer<Campfire> SERIALIZER = serializer(Campfire::new);
+        
+        public Campfire(FurnaceRecipeDisplay recipe, Optional<RecipeDisplayId> id) {
+            super(recipe, id);
+        }
+        
+        public Campfire(List<EntryIngredient> inputs, List<EntryIngredient> outputs, Optional<RecipeDisplayId> location) {
+            super(inputs, outputs, location);
+        }
+        
+        @Override
+        public CategoryIdentifier<?> getCategoryIdentifier() {
+            return BuiltinPlugin.CAMPFIRE;
         }
         
         @Override

@@ -40,7 +40,8 @@ import java.util.Collections;
 import java.util.Set;
 
 public class DisplayCacheImpl implements DisplayCache {
-    private final boolean cache;
+    private final boolean init;
+    private Boolean cache = null;
     private Set<Display> displaysCached = new ReferenceOpenHashSet<>();
     private Set<Display> displaysNotCached = Collections.synchronizedSet(new ReferenceOpenHashSet<>());
     private SetMultimap<EntryStack<?>, Display> displaysByInput;
@@ -48,9 +49,20 @@ public class DisplayCacheImpl implements DisplayCache {
     private boolean preprocessed = false;
     
     public DisplayCacheImpl(boolean init) {
-        this.cache = init && ConfigObject.getInstance().doesCacheDisplayLookup();
+        this.init = init;
         this.displaysByInput = createSetMultimap();
         this.displaysByOutput = createSetMultimap();
+    }
+    
+    private boolean shouldCache() {
+        if (cache == null) {
+            try {
+                cache = init && ConfigObject.getInstance().doesCacheDisplayLookup();
+            } catch (Throwable t) {
+                cache = false;
+            }
+        }
+        return cache;
     }
     
     @Override
@@ -65,17 +77,17 @@ public class DisplayCacheImpl implements DisplayCache {
     
     @Override
     public boolean doesCache() {
-        return this.cache;
+        return shouldCache();
     }
     
     @Override
     public boolean isCached(Display display) {
-        return this.cache && this.displaysCached.contains(display);
+        return shouldCache() && this.displaysCached.contains(display);
     }
     
     @Override
     public void add(Display display) {
-        if (this.cache) {
+        if (shouldCache()) {
             if (!this.preprocessed) {
                 this.displaysNotCached.add(display);
             } else {
@@ -89,7 +101,7 @@ public class DisplayCacheImpl implements DisplayCache {
     
     @Override
     public boolean remove(Display display) {
-        if (this.cache) {
+        if (shouldCache()) {
             if (!this.preprocessed) {
                 return this.displaysNotCached.remove(display);
             } else {
@@ -115,7 +127,7 @@ public class DisplayCacheImpl implements DisplayCache {
     
     @Override
     public void endReload() {
-        if (this.cache) {
+        if (shouldCache()) {
             if (this.preprocessed) {
                 InternalLogger.getInstance().error("DisplayCache#endReload called after preprocessed!");
             }

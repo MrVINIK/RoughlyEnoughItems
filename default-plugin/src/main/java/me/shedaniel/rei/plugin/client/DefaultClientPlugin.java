@@ -313,6 +313,13 @@ public class DefaultClientPlugin implements REIClientPlugin, BuiltinClientPlugin
                 .filterType(FurnaceRecipeDisplay.TYPE)
                 .filter((display, r) -> EntryIngredients.ofSlotDisplay(display.craftingStation()).contains(EntryStacks.of(Items.BLAST_FURNACE)))
                 .fill(ClientsidedCookingDisplay.Blasting::new);
+        registry.beginRecipeFiller(FurnaceRecipeDisplay.class)
+                .filterType(FurnaceRecipeDisplay.TYPE)
+                .filter((display, r) -> {
+                    var station = EntryIngredients.ofSlotDisplay(display.craftingStation());
+                    return station.contains(EntryStacks.of(Items.CAMPFIRE)) || station.contains(EntryStacks.of(Items.SOUL_CAMPFIRE));
+                })
+                .fill(ClientsidedCookingDisplay.Campfire::new);
         registry.beginRecipeFiller(StonecutterRecipeDisplay.class)
                 .filterType(StonecutterRecipeDisplay.TYPE)
                 .fill((display, id) -> new DefaultStoneCuttingDisplay(

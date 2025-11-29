@@ -147,6 +147,7 @@ public class DefaultPlugin implements BuiltinPlugin, REICommonPlugin {
         registry.register(id("client/smelting"), ClientsidedCookingDisplay.Smelting.SERIALIZER);
         registry.register(id("client/smoking"), ClientsidedCookingDisplay.Smoking.SERIALIZER);
         registry.register(id("client/blasting"), ClientsidedCookingDisplay.Blasting.SERIALIZER);
+        registry.register(id("client/campfire"), ClientsidedCookingDisplay.Campfire.SERIALIZER);
         registry.register(id("default/crafting/shaped"), DefaultShapedDisplay.SERIALIZER);
         registry.register(id("default/crafting/shapeless"), DefaultShapelessDisplay.SERIALIZER);
         registry.register(id("default/crafting/custom"), DefaultCustomDisplay.SERIALIZER);
