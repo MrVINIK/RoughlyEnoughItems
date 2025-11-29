@@ -182,10 +182,16 @@ public class DisplayRegistryImpl extends AbstractDisplayRegistry<REIClientPlugin
     public void addRecipes(List<RecipeDisplayEntry> entries) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         int lastSize = size();
+        int skipped = 0;
         if (!fillers().isEmpty()) {
             for (RecipeDisplayEntry entry : entries) {
                 try {
-                    for (Display display : tryFillDisplay(entry.display(), DisplayAdditionReason.RECIPE_MANAGER, DisplayAdditionReason.withId(entry.id()))) {
+                    Collection<Display> displays = tryFillDisplay(entry.display(), DisplayAdditionReason.RECIPE_MANAGER, DisplayAdditionReason.withId(entry.id()));
+                    if (displays.isEmpty()) {
+                        skipped++;
+                        InternalLogger.getInstance().trace("No filler for recipe display type: %s [%s]", entry.display().getClass().getSimpleName(), entry.id());
+                    }
+                    for (Display display : displays) {
                         add(display, entry);
                     }
                 } catch (Throwable e) {
@@ -193,7 +199,7 @@ public class DisplayRegistryImpl extends AbstractDisplayRegistry<REIClientPlugin
                 }
             }
         }
-        InternalLogger.getInstance().debug("Filled %d displays from vanilla server in %s", size() - lastSize, stopwatch.stop());
+        InternalLogger.getInstance().debug("Filled %d displays from vanilla server in %s (skipped %d)", size() - lastSize, stopwatch.stop(), skipped);
     }
     
     public void removeRecipes(Set<RecipeDisplayId> ids) {
