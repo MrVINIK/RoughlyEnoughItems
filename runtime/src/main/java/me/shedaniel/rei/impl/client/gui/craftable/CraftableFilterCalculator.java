@@ -55,6 +55,8 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
     private Set<Display> checkedCraftableDisplays = Collections.synchronizedSet(new ReferenceOpenHashSet<>());
     private Set<Display> checkedUncraftableDisplays = Collections.synchronizedSet(new ReferenceOpenHashSet<>());
     private LongSet checkedCraftableEntries = LongSets.synchronize(new LongOpenHashSet());
+    private Long2LongMap cachedIngredients = null;
+    private boolean ingredientsCacheValid = false;
     
     @Override
     public boolean test(HashedEntryStackWrapper wrapper) {
@@ -66,6 +68,11 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
             if (checkCraftableCachedByResult(display)) return true;
         }
         return false;
+    }
+    
+    public void invalidateCache() {
+        ingredientsCacheValid = false;
+        cachedIngredients = null;
     }
     
     private boolean checkCraftableCachedByDisplay(Display display) {
@@ -131,15 +138,23 @@ public class CraftableFilterCalculator implements Predicate<HashedEntryStackWrap
     
     @Nullable
     public Long2LongMap chooseHandler(Display display) {
+        if (ingredientsCacheValid && cachedIngredients != null) {
+            return new Long2LongOpenHashMap(cachedIngredients);
+        }
+        
         TransferHandler.Context transferContext = TransferHandler.Context.create(false, false, REIRuntime.getInstance().getPreviousContainerScreen(), display);
         for (TransferHandler handler : TransferHandlerRegistry.getInstance()) {
             TransferHandler.ApplicabilityResult result = handler.checkApplicable(transferContext);
             if (result.isSuccessful()) {
+                Long2LongMap ingredients;
                 if (handler instanceof TransferHandlerMeta) {
-                    return extractIngredients(((TransferHandlerMeta) handler).getAvailableIngredients(transferContext));
+                    ingredients = extractIngredients(((TransferHandlerMeta) handler).getAvailableIngredients(transferContext));
                 } else {
-                    return CraftableFilter.INSTANCE.getInvStacks();
+                    ingredients = CraftableFilter.INSTANCE.getInvStacks();
                 }
+                cachedIngredients = new Long2LongOpenHashMap(ingredients);
+                ingredientsCacheValid = true;
+                return ingredients;
             }
         }
         

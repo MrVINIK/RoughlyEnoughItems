@@ -99,6 +99,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.display.FurnaceRecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapedCraftingRecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.StonecutterRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SmithingRecipeDisplay;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
@@ -311,6 +313,22 @@ public class DefaultClientPlugin implements REIClientPlugin, BuiltinClientPlugin
                 .filterType(FurnaceRecipeDisplay.TYPE)
                 .filter((display, r) -> EntryIngredients.ofSlotDisplay(display.craftingStation()).contains(EntryStacks.of(Items.BLAST_FURNACE)))
                 .fill(ClientsidedCookingDisplay.Blasting::new);
+        registry.beginRecipeFiller(StonecutterRecipeDisplay.class)
+                .filterType(StonecutterRecipeDisplay.TYPE)
+                .fill((display, id) -> new DefaultStoneCuttingDisplay(
+                        List.of(EntryIngredients.ofSlotDisplay(display.input())),
+                        List.of(EntryIngredients.ofSlotDisplay(display.result())),
+                        Optional.empty()));
+        registry.beginRecipeFiller(SmithingRecipeDisplay.class)
+                .filterType(SmithingRecipeDisplay.TYPE)
+                .fill((display, id) -> new DefaultSmithingDisplay(
+                        List.of(
+                                EntryIngredients.ofSlotDisplay(display.template()),
+                                EntryIngredients.ofSlotDisplay(display.base()),
+                                EntryIngredients.ofSlotDisplay(display.addition())
+                        ),
+                        List.of(EntryIngredients.ofSlotDisplay(display.result())),
+                        Optional.empty()));
         registry.beginFiller(AnvilRecipe.class)
                 .fill(DefaultAnvilDisplay::new);
         registry.beginFiller(BrewingRecipe.class)

@@ -47,8 +47,11 @@ public class CreativeModeTabCollectorImpl {
             if (tab.getType() != CreativeModeTab.Type.HOTBAR && tab.getType() != CreativeModeTab.Type.INVENTORY) {
                 try {
                     CreativeModeTab.ItemDisplayBuilder builder = new CreativeModeTab.ItemDisplayBuilder(tab, featureFlags);
+                    ResourceKey<CreativeModeTab> resourceKey = BuiltInRegistries.CREATIVE_MODE_TAB
+                            .getResourceKey(tab)
+                            .orElseThrow(() -> new IllegalStateException("Unregistered creative tab: " + tab));
                     tab.displayItemsGenerator.accept(parameters, builder);
-                    map.put(tab, builder.tabContents);
+                    map.put(tab, postFabricEvents(tab, parameters, resourceKey, builder.tabContents));
                 } catch (Throwable throwable) {
                     InternalLogger.getInstance().error("Failed to collect creative tab: " + tab, throwable);
                 }
@@ -60,6 +63,14 @@ public class CreativeModeTabCollectorImpl {
     
     @SuppressWarnings("UnstableApiUsage")
     private static Collection<ItemStack> postFabricEvents(CreativeModeTab tab, CreativeModeTab.ItemDisplayParameters parameters, ResourceKey<CreativeModeTab> resourceKey, Collection<ItemStack> tabContents) {
-        return tabContents;
+        try {
+            FabricItemGroupEntries entries = new FabricItemGroupEntries(parameters, new LinkedList<>(tabContents), new LinkedList<>());
+            ItemGroupEvents.modifyEntriesEvent(resourceKey).invoker().modifyEntries(entries);
+            ItemGroupEvents.MODIFY_ENTRIES_ALL.invoker().modifyEntries(tab, entries);
+            return entries.getDisplayStacks();
+        } catch (Throwable throwable) {
+            InternalLogger.getInstance().error("Failed to collect fabric's creative tab: " + tab, throwable);
+            return tabContents;
+        }
     }
 }

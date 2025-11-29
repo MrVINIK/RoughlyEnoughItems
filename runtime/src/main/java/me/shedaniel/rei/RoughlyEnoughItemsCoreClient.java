@@ -317,7 +317,7 @@ public class RoughlyEnoughItemsCoreClient {
             reloadPlugins(endReload, ReloadStage.END);
         });
         ClientRecipeUpdateEvent.ADD.register((recipeAccess, entries) -> {
-            if (ClientHelperImpl.getInstance().canUsePackets()) {
+            if (NetworkManager.canServerReceive(DisplaySyncPacket.TYPE)) {
                 return;
             }
             
@@ -327,7 +327,7 @@ public class RoughlyEnoughItemsCoreClient {
             registry.addJob(() -> registry.addRecipes(mapped));
         });
         ClientRecipeUpdateEvent.REMOVE.register((recipeAccess, entries) -> {
-            if (ClientHelperImpl.getInstance().canUsePackets()) {
+            if (NetworkManager.canServerReceive(DisplaySyncPacket.TYPE)) {
                 return;
             }
             
