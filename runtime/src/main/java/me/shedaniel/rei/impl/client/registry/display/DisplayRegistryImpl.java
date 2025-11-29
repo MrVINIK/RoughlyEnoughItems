@@ -264,7 +264,7 @@ public class DisplayRegistryImpl extends AbstractDisplayRegistry<REIClientPlugin
     }
     
     public static class ClientDisplaysHolder extends DisplaysHolderImpl.ByKey {
-        private final DisplayCache cache = new DisplayCacheImpl(false);
+        private final DisplayCache cache = new DisplayCacheImpl(true);
         
         @Override
         public void add(Display display, @Nullable Object origin) {
