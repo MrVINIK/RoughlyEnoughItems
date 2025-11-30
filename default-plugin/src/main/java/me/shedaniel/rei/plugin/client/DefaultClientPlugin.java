@@ -97,8 +97,10 @@ import net.minecraft.world.item.alchemy.PotionBrewing;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.display.FurnaceRecipeDisplay;
+import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapedCraftingRecipeDisplay;
 import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.item.crafting.display.StonecutterRecipeDisplay;
 import net.minecraft.world.item.crafting.display.SmithingRecipeDisplay;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -301,6 +303,31 @@ public class DefaultClientPlugin implements REIClientPlugin, BuiltinClientPlugin
         registry.beginRecipeFiller(ShapelessCraftingRecipeDisplay.class)
                 .filterType(ShapelessCraftingRecipeDisplay.TYPE)
                 .fill(ClientsidedCraftingDisplay.Shapeless::new);
+        registry.beginRecipeFiller(RecipeDisplay.class)
+                .filter((display, r) -> {
+                    if (display instanceof ShapedCraftingRecipeDisplay || display instanceof ShapelessCraftingRecipeDisplay) {
+                        return false;
+                    }
+                    SlotDisplay station = display.craftingStation();
+                    if (station instanceof SlotDisplay.Empty) return false;
+                    EntryIngredient stationIngredient = EntryIngredients.ofSlotDisplay(station);
+                    return stationIngredient.contains(EntryStacks.of(Items.CRAFTING_TABLE));
+                })
+                .fill((display, id) -> {
+                    try {
+                        var ingredientsMethod = display.getClass().getMethod("ingredients");
+                        var resultMethod = display.getClass().getMethod("result");
+                        @SuppressWarnings("unchecked")
+                        List<SlotDisplay> ingredients = (List<SlotDisplay>) ingredientsMethod.invoke(display);
+                        SlotDisplay result = (SlotDisplay) resultMethod.invoke(display);
+                        List<EntryIngredient> inputs = EntryIngredients.ofSlotDisplays(ingredients);
+                        List<EntryIngredient> outputs = List.of(EntryIngredients.ofSlotDisplay(result));
+                        if (inputs.isEmpty() || outputs.isEmpty() || outputs.get(0).isEmpty()) return null;
+                        return new ClientsidedCraftingDisplay.Shapeless(inputs, outputs, id);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                });
         registry.beginRecipeFiller(FurnaceRecipeDisplay.class)
                 .filterType(FurnaceRecipeDisplay.TYPE)
                 .filter((display, r) -> EntryIngredients.ofSlotDisplay(display.craftingStation()).contains(EntryStacks.of(Items.FURNACE)))

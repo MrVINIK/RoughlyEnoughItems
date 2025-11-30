@@ -45,6 +45,7 @@ public class DisplayValidator {
                 return false;
             }
         } catch (NullPointerException exception) {
+            InternalLogger.getInstance().trace("Display [%s] %s has no registered category [%s], allowing anyway", display.getDisplayLocation().orElse(null), display.getClass().getSimpleName(), identifier);
             return true;
         } catch (Throwable throwable) {
             InternalLogger.getInstance().error("Display [%s] %s failed validation check for category [%s]".formatted(display.getDisplayLocation().orElse(null), display, identifier), throwable);

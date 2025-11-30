@@ -107,16 +107,24 @@ public record DisplaySyncPacket(SyncType syncType, Collection<Display> displays,
             InternalLogger.getInstance().info("[REI Server Display Sync] Received server's request to set %d recipes.", displays().size());
             registry.addJob(() -> {
                 registry.removeSyncedRecipes();
+                int added = 0;
                 for (Display display : displays()) {
-                    registry.add(display, DisplayRegistryImpl.SYNCED);
+                    if (registry.add(display, DisplayRegistryImpl.SYNCED)) {
+                        added++;
+                    }
                 }
+                InternalLogger.getInstance().info("[REI Server Display Sync] Successfully added %d recipes, total: %d", added, registry.size());
             });
         } else if (syncType() == SyncType.APPEND) {
             InternalLogger.getInstance().info("[REI Server Display Sync] Received server's request to append %d recipes.", displays().size());
             registry.addJob(() -> {
+                int added = 0;
                 for (Display display : displays()) {
-                    registry.add(display, DisplayRegistryImpl.SYNCED);
+                    if (registry.add(display, DisplayRegistryImpl.SYNCED)) {
+                        added++;
+                    }
                 }
+                InternalLogger.getInstance().info("[REI Server Display Sync] Successfully appended %d recipes, total: %d", added, registry.size());
             });
         }
     }

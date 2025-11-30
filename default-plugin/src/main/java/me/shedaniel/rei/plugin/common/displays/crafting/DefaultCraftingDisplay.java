@@ -61,9 +61,38 @@ public abstract class DefaultCraftingDisplay extends BasicDisplay implements Cra
                     return new ClientsidedCraftingDisplay.Shapeless(display, Optional.empty());
                 }
             }
+            CraftingDisplay fallback = tryCreateFallbackDisplay(recipe, holder.id().location());
+            if (fallback != null) return fallback;
         }
         
         return null;
+    }
+    
+    @Nullable
+    private static CraftingDisplay tryCreateFallbackDisplay(Recipe<?> recipe, ResourceLocation id) {
+        try {
+            var placementInfo = recipe.placementInfo();
+            if (placementInfo == null || placementInfo.ingredients() == null) return null;
+            var ingredients = placementInfo.ingredients();
+            if (ingredients.isEmpty()) return null;
+            var result = recipe.getClass().getMethod("result");
+            Object resultObj = result.invoke(recipe);
+            if (resultObj == null) return null;
+            List<EntryIngredient> inputs = new java.util.ArrayList<>();
+            for (var ingredient : ingredients) {
+                inputs.add(me.shedaniel.rei.api.common.util.EntryIngredients.ofIngredient(ingredient));
+            }
+            List<EntryIngredient> outputs;
+            if (resultObj instanceof net.minecraft.world.item.ItemStack stack) {
+                outputs = List.of(me.shedaniel.rei.api.common.util.EntryIngredients.of(stack));
+            } else {
+                return null;
+            }
+            if (inputs.isEmpty() || outputs.isEmpty() || outputs.get(0).isEmpty()) return null;
+            return new DefaultCustomShapelessDisplay(inputs, outputs, Optional.of(id));
+        } catch (Exception e) {
+            return null;
+        }
     }
     
     @Override
